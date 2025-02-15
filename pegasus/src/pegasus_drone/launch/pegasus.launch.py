@@ -101,6 +101,29 @@ def generate_launch_description():
         arguments=['--ros-args', '--log-level', 'info'],
     )
 
+    # Create the node that starts the web video server
+    web_video_server = Node(
+        package='web_video_server',
+        #namespace=[
+        #    LaunchConfiguration('vehicle_ns'), 
+        #    LaunchConfiguration('vehicle_id')],
+        executable='web_video_server',
+        name='web_video_server',
+        output="screen",
+        emulate_tty=True,
+        parameters=[
+            # Set the default parameters for the web video server
+            {
+                'port': '8080',
+                'address': '0.0.0.0',
+                'server_threads': 1, 
+                'ros_threads': '1',
+                'default_stream_type': 'mjpeg',
+                'verbose': True
+            }
+        ]
+    )
+
     # ----------------------------------------
     # ---- RETURN THE LAUNCH DESCRIPTION -----
     # ----------------------------------------
@@ -110,5 +133,6 @@ def generate_launch_description():
         namespace_arg, 
         drone_params_file_arg,
         # Nodes
-        visual_slam_launch_container, 
+        visual_slam_launch_container,
+        web_video_server
     ])

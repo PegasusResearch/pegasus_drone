@@ -7,3 +7,6 @@
 [submodule "pegasus_external/src/realsense-ros"]
 	path = pegasus_external/src/realsense-ros
 	url = https://github.com/IntelRealSense/realsense-ros.git
+[submodule "pegasus_external/src/web_video_server"]
+	path = pegasus_external/src/web_video_server
+	url = git@github.com:PegasusResearch/web_video_server.git
