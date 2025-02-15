@@ -4,3 +4,6 @@
 [submodule "pegasus/src/pegasus"]
 	path = pegasus/src/pegasus
 	url = git@github.com:PegasusResearch/pegasus.git
+[submodule "pegasus_external/src/realsense-ros"]
+	path = pegasus_external/src/realsense-ros
+	url = https://github.com/IntelRealSense/realsense-ros.git
