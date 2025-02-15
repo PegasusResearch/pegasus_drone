@@ -1,0 +1,6 @@
+[submodule "pegasus_external/src/pegasus_external"]
+	path = pegasus_external/src/pegasus_external
+	url = git@github.com:PegasusResearch/pegasus_external.git
+[submodule "pegasus/src/pegasus"]
+	path = pegasus/src/pegasus
+	url = git@github.com:PegasusResearch/pegasus.git
