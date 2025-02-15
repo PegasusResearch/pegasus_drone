@@ -1,0 +1,213 @@
+/**:
+  ros__parameters:
+    # ----------------------------------------------------------------------------------------------------------
+    # Low-level configurations
+    # ----------------------------------------------------------------------------------------------------------
+    dynamics:
+      mass: 1.540 #Kg | 1.036 Kg
+      thrust_curve:
+        # Formula T(N) = a * arctan(b * input + c) + d   
+        # with input = [0.0, 100.0]
+        identifier: 'Arctan'
+        parameter_names: ["a", "b", "c", "d"]
+        parameters: [18.96362, 0.02335, -0.85863, 13.28857]    # DShot600 configuration
+        #parameters: [22.05413, 0.02235, -0.86620, 15.62617]    # PWM configuration
+    # ----------------------------------------------------------------------------------------------------------
+    # Autopilot configurations
+    # ----------------------------------------------------------------------------------------------------------
+    autopilot:
+      # Update rate
+      rate: 33.0 # Hz
+      # ----------------------------------------------------------------------------------------------------------
+      # Definition of the controller that will perform the tracking of references of the different operation modes
+      # ----------------------------------------------------------------------------------------------------------
+      controller: "OnboardController"
+      # Configurations needed by the PX4 controller
+      OnboardController:
+        publishers:
+          control_position: "fmu/in/position"
+          control_body_velocity: "fmu/in/velocity/body"
+          control_inertial_velocity: "fmu/in/velocity/inertial"
+          control_inertial_acceleration: "fmu/in/inertial_acceleration"
+          control_attitude: "fmu/in/force/attitude"
+          control_attitude_rate: "fmu/in/force/attitude_rate"
+      PIDController:
+        publishers:
+          control_attitude: "fmu/in/force/attitude"
+          control_attitude_rate: "fmu/in/force/attitude_rate"
+          pid_debug_topic: "autopilot/statistics/pid"
+        # Gains for position PIDs on [x, y, z]
+        gains:
+          kp: [5.0, 5.0, 4.5]               # Proportional gain
+          kd: [4.2, 4.2, 5.2]               # Derivative gain
+          ki: [0.0, 0.0, 0.1]               # Integral gain
+          min_output: [-20.0, -20.0, -20.0] # Minimum output of each PID
+          max_output: [ 20.0,  20.0,  20.0]
+      MellingerController:
+        publishers:
+          control_attitude: "fmu/in/force/attitude"
+          control_attitude_rate: "fmu/in/force/attitude_rate"
+          debug_topic: "autopilot/statistics/mellinger"
+        gains:
+          kp: [5.0, 5.0, 5.0]    # Proportional gain
+          kd: [4.2, 4.2, 5.2]    # Derivative gain
+          ki: [0.0, 0.0, 0.0]    # Integral gain
+          kr: [5.0, 5.0, 5.0]    # Attitude error gain
+          min_output: [-100.0, -100.0, -100.0]  # Minimum output of each PID
+          max_output: [ 100.0,  100.0,  100.0]  # Maximum output of each PID
+      # ----------------------------------------------------------------------------------------------------------
+      # Definition of the geofencing mechanism that will keep the vehicle in safe places
+      # ----------------------------------------------------------------------------------------------------------
+      geofencing: "BoxGeofencing"
+      BoxGeofencing:
+        limits_x: [-1000.0, 1000.0]
+        limits_y: [-1000.0, 1000.0]
+        limits_z: [-1000.0, 1000.0] # NED Coordinades (z-negative is up)
+      # ----------------------------------------------------------------------------------------------------------
+      # Definition of the trajectory manager that generates parameterized trajectories to be followed
+      # ----------------------------------------------------------------------------------------------------------
+      trajectory_manager: "StaticTrajectoryManager"
+      StaticTrajectoryManager:
+        trajectories: ["ArcFactory", "LineFactory", "CircleFactory", "LemniscateFactory", "CSVFactory"]
+        services:
+          reset_trajectory: "autopilot/trajectory/reset"
+        # Individual trajectory setup
+        ArcFactory:
+          service: "autopilot/trajectory/add_arc"
+        LineFactory:
+          service: "autopilot/trajectory/add_line"
+        CircleFactory:
+          service: "autopilot/trajectory/add_circle"
+        LemniscateFactory:
+          service: "autopilot/trajectory/add_lemniscate"
+        CSVFactory:
+          service: "autopilot/trajectory/add_csv"
+      # ---------------------------------------------------------------------------------------------------------
+      # Define the default operation mode (the one which the autopilot initializes at)
+      # ---------------------------------------------------------------------------------------------------------
+      default_mode: "DisarmMode"
+      # Define all the existing operation modes
+      modes: ["DisarmMode", "ArmMode", "TakeoffMode", "LandMode", "HoldMode", "WaypointMode", "FollowTrajectoryMode", "PassThroughMode"]
+      # Configurations of each operating mode:
+      # 1) Define the valid transitions from a given operation mode to other operation modes
+      # 2) Fallback mode if something goes wrong
+      # 3) Other specific operating mode configuration
+      DisarmMode: 
+        valid_transitions: ["ArmMode"]
+        fallback: "DisarmMode"
+        disarm_service: "fmu/kill_switch"
+      ArmMode: 
+        valid_transitions: ["DisarmMode", "TakeoffMode", "HoldMode", "WaypointMode", "FollowTrajectoryMode", "PassThroughMode"]
+        fallback: "DisarmMode"
+        geofencing_violation_fallback: "DisarmMode"
+        arm_service: "fmu/arm"
+        offboard_service: "fmu/offboard"
+      TakeoffMode: 
+        valid_transitions: ["LandMode", "HoldMode", "WaypointMode", "FollowTrajectoryMode", "PassThroughMode"]
+        fallback: "HoldMode"
+        on_finish: "HoldMode"
+        geofencing_violation_fallback: "HoldMode"
+        takeoff_altitude: -2.0 # m (NED)
+        set_takeoff_altitude_service: "autopilot/set_takeoff"
+      LandMode: 
+        valid_transitions: ["DisarmMode", "ArmMode", "TakeoffMode", "HoldMode", "WaypointMode", "FollowTrajectoryMode", "PassThroughMode"]
+        fallback: "HoldMode"
+        on_finish: "DisarmMode"
+        land_speed: 0.4 # m/s
+        land_detected_treshold: 0.1 # m/s
+        countdown_to_disarm: 3.0 # s
+      HoldMode: 
+        valid_transitions: ["LandMode", "WaypointMode", "FollowTrajectoryMode", "PassThroughMode"]
+        fallback: "LandMode"
+      WaypointMode: 
+        valid_transitions: ["LandMode", "HoldMode", "FollowTrajectoryMode", "PassThroughMode"]
+        fallback: "HoldMode"
+        geofencing_violation_fallback: "HoldMode"
+        set_waypoint_service: "autopilot/set_waypoint"
+      FollowTrajectoryMode: 
+        valid_transitions: ["LandMode", "HoldMode", "WaypointMode", "PassThroughMode"]
+        fallback: "HoldMode"
+        geofencing_violation_fallback: "HoldMode"
+        on_finish: "HoldMode"
+      PassThroughMode: 
+        valid_transitions: ["DisarmMode", "ArmMode", "TakeoffMode", "LandMode", "HoldMode", "WaypointMode", "FollowTrajectoryMode"]
+        fallback: "HoldMode"
+        geofencing_violation_fallback: "HoldMode"
+      # Topics configurations
+      publishers:
+        control_position: "fmu/in/position"
+        control_attitude: "fmu/in/force/attitude"
+        control_attitude_rate: "fmu/in/force/attitude_rate"
+        status: "autopilot/status"
+      subscribers:
+        state: "fmu/filter/state"
+        status: "fmu/status"
+        constants: "fmu/constants"
+      services:
+        set_mode: "autopilot/change_mode"
+    # ----------------------------------------------------------------------------------------------------------
+    # Realsense parameters
+    # ----------------------------------------------------------------------------------------------------------
+    json_file_path: ''                                  # allows advanced configuration
+    initial_reset: false
+    accelerate_gpu_with_glsl: false                     # enable GPU acceleration with GLSL'},
+    rosbag_filename: ''                                 # A realsense bagfile to run from as a device'},
+    log_level: 'info'                                   # debug log level [DEBUG|INFO|WARN|ERROR|FATAL]'},
+    output: 'screen'                                    # pipe node output [screen|log]'},
+    enable_color: false                                 # enable color stream'},
+    rgb_camera.color_profile: '0,0,0'                   # color stream profile'},
+    rgb_camera.color_format: 'RGB8'                     # color stream format'},
+    rgb_camera.enable_auto_exposure: false              # enable/disable auto exposure for color image'},
+    enable_depth: false                                 # enable depth stream'},
+    enable_infra: true                                  # enable infra0 stream'},
+    enable_infra1: true                                 # enable infra1 stream'},
+    enable_infra2: true                                 # enable infra2 stream'},
+    depth_module.depth_profile: '0,0,0'                 #  depth stream profile'},
+    depth_module.emitter_enabled: 0                     # laser for depth sensing'},
+    depth_module.depth_format: 'Z16'                    # depth stream format'},
+    depth_module.infra_profile: '640,480,90'            # infra streams (0/1/2) profile'},
+    depth_module.infra_format: 'RGB8'                   # infra0 stream format'},
+    depth_module.infra1_format: 'Y8'                    # infra1 stream format'},
+    depth_module.infra2_format: 'Y8'                    # infra2 stream format'},
+    depth_module.color_profile: '0,0,0'                 # Depth module color stream profile'},
+    depth_module.exposure: 8500                         # Depth module manual exposure value'},
+    depth_module.gain: 16                               # Depth module manual gain value'},
+    depth_module.hdr_enabled: false                     # Depth module hdr enablement flag. Used for hdr_merge filter'},
+    depth_module.enable_auto_exposure: true             # enable/disable auto exposure for depth image'},
+    depth_module.exposure.1: 7500                       # Depth module first exposure value. Used for hdr_merge filter'},
+    depth_module.gain.1: 16                             # Depth module first gain value. Used for hdr_merge filter'},
+    depth_module.exposure.2: 1                          # Depth module second exposure value. Used for hdr_merge filter'},
+    depth_module.gain.2: 16                             # Depth module second gain value. Used for hdr_merge filter'},
+    enable_sync: false                                  # 'enable sync mode'"},
+    depth_module.inter_cam_sync_mode: 0                 # [0-Default, 1-Master, 2-Slave]'},
+    enable_rgbd: false                                  # 'enable rgbd topic'"},
+    enable_gyro: true                                   # 'enable gyro stream'"},
+    enable_accel: true                                  # 'enable accel stream'"},
+    gyro_fps: 200                                       # 
+    enable_motion: true                                 # 'enable motion stream (IMU) for DDS devices'"},
+    accel_fps: 63                                       # 
+    unite_imu_method: 2                                 # [0-None, 1-copy, 2-linear_interpolation]'},
+    clip_distance: -2.0                                 #
+    angular_velocity_cov: 0.01                          # 
+    linear_accel_cov: 0.01                              # 
+    diagnostics_period: 0.0                             # Rate of publishing diagnostics. 0=Disabled'},
+    publish_tf: true                                    # [bool] enable/disable publishing static & dynamic TF'},
+    tf_publish_rate: 1.0                                # [double] rate in Hz for publishing dynamic TF'},
+    pointcloud.enable: false                            # 
+    align_depth.enable: false                           # enable align depth filter'},
+    colorizer.enable: false                             # enable colorizer filter'},
+    decimation_filter.enable: false                     # enable_decimation_filter'},
+    spatial_filter.enable: false                        # enable_spatial_filter'},
+    temporal_filter.enable: false                       # enable_temporal_filter'},
+    disparity_filter.enable: false                      # enable_disparity_filter'},
+    hole_filling_filter.enable: false                   # enable_hole_filling_filter'},
+    hdr_merge.enable: false                             # hdr_merge filter enablement flag'},
+    wait_for_device_timeout: -1.0                       # Timeout for waiting for device to connect (Seconds)'},
+    reconnect_timeout: 6.0                              # Timeout(seconds) between consequtive reconnection attempts'},
+    color_qos: 'DEFAULT'                  # SYSTEM_DEFAULT, DEFAULT, PARAMETER_EVENTS, SERVICES_DEFAULT, PARAMETERS, SENSOR_DATA
+    fisheye_qos: 'DEFAULT'                # SYSTEM_DEFAULT, DEFAULT, PARAMETER_EVENTS, SERVICES_DEFAULT, PARAMETERS, SENSOR_DATA
+    depth_qos: 'DEFAULT'                  # SYSTEM_DEFAULT, DEFAULT, PARAMETER_EVENTS, SERVICES_DEFAULT, PARAMETERS, SENSOR_DATA
+    gyro_qos: 'DEFAULT'                   # SYSTEM_DEFAULT, DEFAULT, PARAMETER_EVENTS, SERVICES_DEFAULT, PARAMETERS, SENSOR_DATA
+    accel_qos: 'DEFAULT'                  # SYSTEM_DEFAULT, DEFAULT, PARAMETER_EVENTS, SERVICES_DEFAULT, PARAMETERS, SENSOR_DATA
+    pose_qos: 'DEFAULT'                   # SYSTEM_DEFAULT, DEFAULT, PARAMETER_EVENTS, SERVICES_DEFAULT, PARAMETERS, SENSOR_DATA
+    
