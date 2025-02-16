@@ -13,6 +13,18 @@
         parameters: [18.96362, 0.02335, -0.85863, 13.28857]    # DShot600 configuration
         #parameters: [22.05413, 0.02235, -0.86620, 15.62617]    # PWM configuration
     # ----------------------------------------------------------------------------------------------------------
+    # Mavlink inteface sensor data rates
+    # ----------------------------------------------------------------------------------------------------------
+    mavlink_interface:
+      # Defines the rates for the onboard to send the data through mavlink
+      rates:
+        attitude: 50.0
+        position: 30.0
+        gps: 1.0
+        altitude: 5.0    # Barometer
+        imu: 10.0
+        distance: 5.0   # Altimeter (laser)
+    # ----------------------------------------------------------------------------------------------------------
     # Autopilot configurations
     # ----------------------------------------------------------------------------------------------------------
     autopilot:

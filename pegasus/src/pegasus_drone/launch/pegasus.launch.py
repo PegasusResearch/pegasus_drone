@@ -37,6 +37,44 @@ def generate_launch_description():
         default_value=os.path.join(get_package_share_directory('pegasus_drone'), 'config', 'pegasus.yaml'),
         description='The directory where the drone parameters such as mass, thrust curve, etc. are defined')
 
+    # ----------------------------------------
+    # ---------- CONTROL PIPELINE ------------
+    # ----------------------------------------
+
+    # Define the standard mavlink port to forward mavlink data (so that it can also be viewed internally by qgroundcontrol)
+    mavlink_forward_addresses = "['']"
+    mavlink_forward_addresses = "['udp://192.168.1.232:15001']"
+
+    # Define the drone MAVLINK IP and PORT
+    mav_connection_arg = DeclareLaunchArgument('connection', default_value='serial:///dev/ttyTHS1:921600', description='The interface used to connect to the vehicle')
+
+    # Define the drone MAVLINK forward ips and ports
+    mavlink_forward_arg = DeclareLaunchArgument('mavlink_forward', default_value=mavlink_forward_addresses, description='A list of ips where to forward mavlink messages')
+    
+    # Call MAVLINK interface package launch file 
+    mavlink_interface_launch_file = IncludeLaunchDescription(
+        # Grab the launch file for the mavlink interface
+        PythonLaunchDescriptionSource(os.path.join(get_package_share_directory('mavlink_interface'), 'launch/mavlink_interface.launch.py')),
+        # Define costume launch arguments/parameters used for the mavlink interface
+        launch_arguments={
+            'id': LaunchConfiguration('vehicle_id'), 
+            'namespace': LaunchConfiguration('vehicle_ns'),
+            'drone_params': LaunchConfiguration('drone_params'),
+            'connection': LaunchConfiguration('connection'),
+            'mavlink_forward': LaunchConfiguration('mavlink_forward')
+        }.items(),
+    )
+
+    # Call autopilot package launch file
+    autopilot_launch_file = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(get_package_share_directory('autopilot'), 'launch/autopilot.launch.py')),
+        # Define costume launch arguments/parameters used 
+        launch_arguments={
+            'id': LaunchConfiguration('vehicle_id'),
+            'namespace': LaunchConfiguration('vehicle_ns'),
+            'autopilot_yaml': LaunchConfiguration('drone_params'),
+        }.items(),
+    )
 
     # ----------------------------------------
     # ----------- IMAGE PIPELINE -------------
@@ -132,7 +170,12 @@ def generate_launch_description():
         id_arg, 
         namespace_arg, 
         drone_params_file_arg,
-        # Nodes
+        mav_connection_arg,
+        mavlink_forward_arg,
+        # Video Nodes
         visual_slam_launch_container,
-        web_video_server
+        web_video_server,
+        # Control Nodes
+        mavlink_interface_launch_file,
+        autopilot_launch_file
     ])
