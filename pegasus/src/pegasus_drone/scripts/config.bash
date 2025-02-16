@@ -6,6 +6,11 @@
 #sudo systemctl enable jetson_clocks.service
 
 # Create the service that automatically starts the pegasus code on boot
+sudo systemctl stop pegasus.service
+sudo systemctl disable pegasus.service
+sudo rm /etc/systemd/system/pegasus.service
+
 sudo cp pegasus.service /etc/systemd/system/pegasus.service
 sudo systemctl daemon-reload
 sudo systemctl enable pegasus.service
+sudo systemctl start pegasus.service
