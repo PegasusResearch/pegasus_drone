@@ -1,0 +1,12 @@
+[Unit]
+Description=Jetson Clocks Service
+After=multi-user.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/jetson_clocks
+RemainAfterExit=yes
+User=root
+
+[Install]
+WantedBy=multi-user.target

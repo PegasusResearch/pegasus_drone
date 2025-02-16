@@ -1,0 +1,13 @@
+[Unit]
+Description=ROS 2 Launch in tmux
+After=network.target
+
+[Service]
+User=pegasus
+WorkingDirectory=/home/pegasus
+ExecStart=/usr/bin/tmux new-session -d -s ros 'source /opt/ros/humble/setup.bash && source ~/pegasus_drone/pegasus_external/install/setup.bash && source ~/pegasus_drone/pegasus/install/setup.bash && ros2 launch pegasus_drone pegasus.launch.py'
+ExecStop=/usr/bin/tmux kill-session -t ros
+Restart=no
+
+[Install]
+WantedBy=multi-user.target
