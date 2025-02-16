@@ -166,8 +166,8 @@
     rosbag_filename: ''                                 # A realsense bagfile to run from as a device'},
     log_level: 'info'                                   # debug log level [DEBUG|INFO|WARN|ERROR|FATAL]'},
     output: 'screen'                                    # pipe node output [screen|log]'},
-    enable_color: false                                 # enable color stream'},
-    rgb_camera.color_profile: '0,0,0'                   # color stream profile'},
+    enable_color: true                                  # enable color stream'},
+    rgb_camera.color_profile: '640,480,60'              # color stream profile'},  ros2 param describe /camera/camera rgb_camera.color_profile
     rgb_camera.color_format: 'RGB8'                     # color stream format'},
     rgb_camera.enable_auto_exposure: false              # enable/disable auto exposure for color image'},
     enable_depth: false                                 # enable depth stream'},
@@ -177,7 +177,7 @@
     depth_module.depth_profile: '0,0,0'                 #  depth stream profile'},
     depth_module.emitter_enabled: 0                     # laser for depth sensing'},
     depth_module.depth_format: 'Z16'                    # depth stream format'},
-    depth_module.infra_profile: '640,480,90'            # infra streams (0/1/2) profile'},
+    depth_module.infra_profile: '640,480,90'            # infra streams (0/1/2) profile'},   ros2 param describe /camera/camera depth_module.infra_profile
     depth_module.infra_format: 'RGB8'                   # infra0 stream format'},
     depth_module.infra1_format: 'Y8'                    # infra1 stream format'},
     depth_module.infra2_format: 'Y8'                    # infra2 stream format'},
