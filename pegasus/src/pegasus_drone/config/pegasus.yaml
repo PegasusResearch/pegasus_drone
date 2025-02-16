@@ -18,8 +18,8 @@
     mavlink_interface:
       # Defines the rates for the onboard to send the data through mavlink
       rates:
-        attitude: 50.0
-        position: 30.0
+        attitude: 33.0
+        position: 33.0
         gps: 1.0
         altitude: 5.0    # Barometer
         imu: 10.0
