@@ -104,9 +104,9 @@ def generate_launch_description():
     # Create the node that starts the web video server
     web_video_server = Node(
         package='web_video_server',
-        #namespace=[
-        #    LaunchConfiguration('vehicle_ns'), 
-        #    LaunchConfiguration('vehicle_id')],
+        namespace=[
+            LaunchConfiguration('vehicle_ns'), 
+            LaunchConfiguration('vehicle_id')],
         executable='web_video_server',
         name='web_video_server',
         output="screen",
